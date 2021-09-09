@@ -1,143 +1,33 @@
-"""
-Again, the code is broken, you need to create 4 functions.
-  - add_to_dict: Add a word to a dict.
-  - get_from_dict: Get a word from inside a dict.
-  - update_word: Update a word inside of the dict.
-  - delete_from_dict: Delete a word from the dict.
+import requests
 
-All this functions should check for errors, follow the comments to see all cases you need to cover.
+while True:
+  url_input = input('Please write a URL or URLs you want to check. (separated by comma)\n')
 
-There should be NO ERRORS from Python in the console.
-"""
+  small_input = url_input.lower()
+  no_space_input = small_input.replace(' ','')
+  split_input = no_space_input.split(',')
 
-def add_to_dict(user_dict, key, value=''):
-  if value == '':
-    return;
+  for url in split_input:
+    num = url.find('http')
+    if(num == -1):
+      url = 'https://' + url
+    try:
+      result = requests.get(url)
+      if(result.status_code == 200):
+        print(url + ' is up!')
+      elif (result.status_code == 404):
+        print(url + ' is down!')
+    except:
+      print('invalid url')
 
-  if type(user_dict) != dict:
-    return;
-
-  for k,v in user_dict.items():
-    if k is key:
-      return;
-      
-  user_dict[key] = value;
-  print(user_dict)
-
-def get_from_dict(user_dict, key='', value=''):
-  if type(user_dict) != dict:
-    return;
-
-  for k,v in user_dict.items():
-    if k is key:
-      print(user_dict[key]);
-
-def update_word(user_dict, key='', value=''):
-  if type(user_dict) != dict:
-    return;
-
-  for k,v in user_dict.items():
-    if k is key:
-      user_dict.update({key:value});
-  
-
-def delete_from_dict(user_dict, key='', value=''):
-  if type(user_dict) != dict:
-    return;
-
-  for k in list(user_dict.keys()):
-    if k is key:
-      del user_dict[key];  
-
-# \/\/\/\/\/\/\ DO NOT TOUCH  \/\/\/\/\/\/\
-
-import os
-
-os.system('clear')
-
-
-my_english_dict = {}
-
-print("\n###### add_to_dict ######\n")
-
-# Should not work. First argument should be a dict.
-print('add_to_dict("hello", "kimchi"):')
-add_to_dict("hello", "kimchi")
-
-# Should not work. Definition is required.
-print('\nadd_to_dict(my_english_dict, "kimchi"):')
-add_to_dict(my_english_dict, "kimchi")
-
-# Should work.
-print('\nadd_to_dict(my_english_dict, "kimchi", "The source of life."):')
-add_to_dict(my_english_dict, "kimchi", "The source of life.")
-
-# Should not work. kimchi is already on the dict
-print('\nadd_to_dict(my_english_dict, "kimchi", "My fav. food"):')
-add_to_dict(my_english_dict, "kimchi", "My fav. food")
-
-
-print("\n\n###### get_from_dict ######\n")
-
-# Should not work. First argument should be a dict.
-print('\nget_from_dict("hello", "kimchi"):')
-get_from_dict("hello", "kimchi")
-
-# Should not work. Word to search from is required.
-print('\nget_from_dict(my_english_dict):')
-get_from_dict(my_english_dict)
-
-# Should not work. Word is not found.
-print('\nget_from_dict(my_english_dict, "galbi"):')
-get_from_dict(my_english_dict, "galbi")
-
-# Should work and print the definiton of 'kimchi'
-print('\nget_from_dict(my_english_dict, "kimchi"):')
-get_from_dict(my_english_dict, "kimchi")
-
-print("\n\n###### update_word ######\n")
-
-# Should not work. First argument should be a dict.
-print('\nupdate_word("hello", "kimchi"):')
-update_word("hello", "kimchi")
-
-# Should not work. Word and definiton are required.
-print('\nupdate_word(my_english_dict, "kimchi"):')
-update_word(my_english_dict, "kimchi")
-
-# Should not work. Word not found.
-print('\nupdate_word(my_english_dict, "galbi", "Love it."):')
-update_word(my_english_dict, "galbi", "Love it.")
-
-# Should work.
-print('\nupdate_word(my_english_dict, "kimchi", "Food from the gods."):')
-update_word(my_english_dict, "kimchi", "Food from the gods.")
-
-# Check the new value.
-print('\nget_from_dict(my_english_dict, "kimchi"):')
-get_from_dict(my_english_dict, "kimchi")
-
-
-print("\n\n###### delete_from_dict ######\n")
-
-# Should not work. First argument should be a dict.
-print('\ndelete_from_dict("hello", "kimchi"):')
-delete_from_dict("hello", "kimchi")
-
-# Should not work. Word to delete is required.
-print('\ndelete_from_dict(my_english_dict):')
-delete_from_dict(my_english_dict)
-
-# Should not work. Word not found.
-print('\ndelete_from_dict(my_english_dict, "galbi"):')
-delete_from_dict(my_english_dict, "galbi")
-
-# Should work.
-print('\ndelete_from_dict(my_english_dict, "kimchi"):')
-delete_from_dict(my_english_dict, "kimchi")
-
-# Check that it does not exist
-print('\nget_from_dict(my_english_dict, "kimchi"):')
-get_from_dict(my_english_dict, "kimchi")
-
-# \/\/\/\/\/\/\ END DO NOT TOUCH  \/\/\/\/\/\/\
+  while True:
+    terminate_input = input('Do you want to start over? ')
+    if terminate_input == 'y':
+      break
+    else:
+      if terminate_input == 'n':
+        print('OK, bye!')
+        quit()
+      else:
+        print('Thats not a invaild answer')
+        continue
