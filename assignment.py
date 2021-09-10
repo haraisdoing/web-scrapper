@@ -1,33 +1,59 @@
+import os
 import requests
+from bs4 import BeautifulSoup
 
-while True:
-  url_input = input('Please write a URL or URLs you want to check. (separated by comma)\n')
+os.system("clear")
+url = "https://www.iban.com/currency-codes"
+page = requests.get(url)
+soup_result = BeautifulSoup(page.text, "html.parser")
 
-  small_input = url_input.lower()
-  no_space_input = small_input.replace(' ','')
-  split_input = no_space_input.split(',')
+currency = soup_result.find_all("td")
+currency_list = []
+for value in currency:
+  currency_list.append(value.string)
 
-  for url in split_input:
-    num = url.find('http')
-    if(num == -1):
-      url = 'https://' + url
-    try:
-      result = requests.get(url)
-      if(result.status_code == 200):
-        print(url + ' is up!')
-      elif (result.status_code == 404):
-        print(url + ' is down!')
-    except:
-      print('invalid url')
+country_list = []
+for i in range(0, len(currency_list)):
+  if i % 4 == 1:
+    country_list.append(currency_list[i-1].capitalize())
 
-  while True:
-    terminate_input = input('Do you want to start over? ')
-    if terminate_input == 'y':
-      break
+# 개선필요
+del country_list[8]
+del country_list[181]
+del country_list[219]
+
+code_list = []      
+for i in range(0, len(currency_list)):
+    if i % 4 == 1:
+      if not currency_list[i+1] == None:
+        code_list.append(currency_list[i+1]) 
+
+def main():
+  print('Hello! Please choose select a country by number:')
+  for i in range(0, len(country_list)):
+    print('# '+str(i)+' '+country_list[i])
+  get_input()
+
+def get_input():
+  user_input = input('#: ')
+  try:
+    user_input = int(user_input)
+    is_int = True
+  except ValueError:
+    is_int = False
+    
+  if is_int == True:
+    if -1 < user_input and user_input < len(country_list):
+      print("You chose "+country_list[user_input])
+      print("The currency code is "+get_code(user_input))
     else:
-      if terminate_input == 'n':
-        print('OK, bye!')
-        quit()
-      else:
-        print('Thats not a invaild answer')
-        continue
+      print("Choose a number from the list.")
+      get_input()
+  else: 
+    print("That wasn't a number.")
+    get_input()
+
+def get_code(user_input):
+  return code_list[user_input]
+
+main()
