@@ -1,59 +1,80 @@
 import os
 import requests
 from bs4 import BeautifulSoup
+from babel.numbers import format_currency
 
 os.system("clear")
-url = "https://www.iban.com/currency-codes"
-page = requests.get(url)
-soup_result = BeautifulSoup(page.text, "html.parser")
 
-currency = soup_result.find_all("td")
-currency_list = []
-for value in currency:
-  currency_list.append(value.string)
 
-country_list = []
-for i in range(0, len(currency_list)):
-  if i % 4 == 1:
-    country_list.append(currency_list[i-1].capitalize())
+code_url = "https://www.iban.com/currency-codes"
+currency_url = "https://transferwise.com/gb/currency-converter/"
 
-# 개선필요
-del country_list[8]
-del country_list[181]
-del country_list[219]
 
-code_list = []      
-for i in range(0, len(currency_list)):
-    if i % 4 == 1:
-      if not currency_list[i+1] == None:
-        code_list.append(currency_list[i+1]) 
+countries = []
 
-def main():
-  print('Hello! Please choose select a country by number:')
-  for i in range(0, len(country_list)):
-    print('# '+str(i)+' '+country_list[i])
-  get_input()
+codes_request = requests.get(code_url)
+codes_soup = BeautifulSoup(codes_request.text, "html.parser")
 
-def get_input():
-  user_input = input('#: ')
+table = codes_soup.find("table")
+rows = table.find_all("tr")[1:]
+
+for row in rows:
+  items = row.find_all("td")
+  name = items[0].text
+  code =items[2].text
+  if name and code:
+    if name != "No universal currency":
+      country = {
+        'name':name.capitalize(),
+        'code': code
+      }
+      countries.append(country)
+
+
+def ask_country(text):
+  print(text)
   try:
-    user_input = int(user_input)
-    is_int = True
-  except ValueError:
-    is_int = False
-    
-  if is_int == True:
-    if -1 < user_input and user_input < len(country_list):
-      print("You chose "+country_list[user_input])
-      print("The currency code is "+get_code(user_input))
-    else:
+    choice = int(input("#: "))
+    if choice >= len(countries) or choice < 0:
       print("Choose a number from the list.")
-      get_input()
-  else: 
+      return ask_country(text)
+    else:
+      print(f"{countries[choice]['name']}")
+      return countries[choice]
+  except ValueError:
     print("That wasn't a number.")
-    get_input()
+    return ask_country(text)
 
-def get_code(user_input):
-  return code_list[user_input]
 
-main()
+def ask_amount(a_country, b_country):
+  try:
+    print(f"\nHow many {a_country['code']} do you want to convert to {b_country['code']}?")
+    amount = int(input())
+    return amount
+  except ValueError:
+    print("That wasn't a number.")
+    return ask_amount(a_country, b_country)
+  
+
+
+print("Welcome to CurrencyConvert PRO 2000\n")
+for index, country in enumerate(countries):
+  print(f"#{index} {country['name']}")
+
+user_country = ask_country("\nWhere are you from? Choose a country by number.\n")
+target_country = ask_country("\nNow choose another country.\n")
+
+
+amount = ask_amount(user_country, target_country)
+
+from_code = user_country['code']
+to_code = target_country['code']
+
+currency_request = requests.get(f"{currency_url}{from_code}-to-{to_code}-rate?amount={amount}")
+currency_soup = BeautifulSoup(currency_request.text, "html.parser")
+rate = currency_soup.find("span", {"class":"text-success"}).get_text()
+if rate:
+  result = float(rate) * amount
+  amount = format_currency(amount, from_code, locale="ko_KR")
+  result = format_currency(result, to_code, locale="ko_KR")
+  print(f"{amount} is {result}")
