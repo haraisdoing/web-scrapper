@@ -1,80 +1,89 @@
 import os
+import csv
 import requests
 from bs4 import BeautifulSoup
-from babel.numbers import format_currency
 
 os.system("clear")
+alba_url = "http://www.alba.co.kr"
 
+brands_request = requests.get(alba_url)
+brands_soup = BeautifulSoup(brands_request.text, "html.parser")
 
-code_url = "https://www.iban.com/currency-codes"
-currency_url = "https://transferwise.com/gb/currency-converter/"
+def export_csv (job_list,company):
+  file = open(company+'.csv',mode="w")
+  writer = csv.writer(file)
+  writer.writerow(["place","title","time","pay","date"])
+  
+  for job in job_list:
+    writer.writerow(list(job.values()))
+  return  
 
+def get_total_count_URL(url):
+  total_count_request = requests.get(url)
+  total_count_soup = BeautifulSoup(total_count_request.text,"html.parser")
+  total_count = total_count_soup.find("p",{"class":"jobCount"}).find("strong").string
+  print('totalcount:'+total_count)
+  request_url = url + 'job/brand/?pagesize=' + total_count.replace(',','')
+  return request_url
 
-countries = []
+def get_job(alba_list):
+  job_list = []
+  for job in alba_list:
+    place = job.find('td',{"class":"local first"}).get_text().replace('\xa0',' ')
+    company = job.find('span',{"class":"company"}).get_text()
+    working_time = job.find('td',{"class":"data"}).get_text()
+    pay = job.find('span',{"class":"number"}).get_text()
+    reg_date = job.find('td', {"class":"regDate"}).get_text()
 
-codes_request = requests.get(code_url)
-codes_soup = BeautifulSoup(codes_request.text, "html.parser")
-
-table = codes_soup.find("table")
-rows = table.find_all("tr")[1:]
-
-for row in rows:
-  items = row.find_all("td")
-  name = items[0].text
-  code =items[2].text
-  if name and code:
-    if name != "No universal currency":
-      country = {
-        'name':name.capitalize(),
-        'code': code
-      }
-      countries.append(country)
-
-
-def ask_country(text):
-  print(text)
-  try:
-    choice = int(input("#: "))
-    if choice >= len(countries) or choice < 0:
-      print("Choose a number from the list.")
-      return ask_country(text)
-    else:
-      print(f"{countries[choice]['name']}")
-      return countries[choice]
-  except ValueError:
-    print("That wasn't a number.")
-    return ask_country(text)
-
-
-def ask_amount(a_country, b_country):
-  try:
-    print(f"\nHow many {a_country['code']} do you want to convert to {b_country['code']}?")
-    amount = int(input())
-    return amount
-  except ValueError:
-    print("That wasn't a number.")
-    return ask_amount(a_country, b_country)
+    job_list.append({
+      'place': place,
+      'title': company,
+      'time' : working_time,
+      'pay'  : pay,
+      'date' : reg_date
+    })
+  return job_list  
   
 
+def main():
+  brands = brands_soup.find("div",{"id":"MainSuperBrand"}).find_all("a", {"class":"goodsBox-info"})
 
-print("Welcome to CurrencyConvert PRO 2000\n")
-for index, country in enumerate(countries):
-  print(f"#{index} {country['name']}")
+  for item in brands:
+    url = item['href']
+    company = item.find("span",{"class":"company"}).get_text().replace('&','＆').replace('/','＆').replace('.','_')
 
-user_country = ask_country("\nWhere are you from? Choose a country by number.\n")
-target_country = ask_country("\nNow choose another country.\n")
+    if (url.startswith('http://www')):
+      combination = []
+      sub_page_request = requests.get(url)
+      sub_page_soup = BeautifulSoup(sub_page_request.text,"html.parser")
+      sub_page = sub_page_soup.find_all("a",{"class":"thum"})
+      
+      for sub_page_url in sub_page:
+        sub_page_url = sub_page_url["href"] + '/'
+        request_url = get_total_count_URL(sub_page_url)
 
+        sub_alba_request = requests.get(request_url)
+        sub_alba_soup = BeautifulSoup(sub_alba_request.text,"html.parser")
+        
+        if sub_alba_soup.find("tbody") == None:
+          pass
+        else:  
+          alba_list = sub_alba_soup.find("tbody").find_all("tr",{"class":""})
+          result = get_job(alba_list)
+          for item in result:
+            combination.append(item)
+      export_csv(combination,company)      
+    else :
+      request_url = get_total_count_URL(url)
+      alba_request = requests.get(request_url)
+      alba_soup = BeautifulSoup(alba_request.text,"html.parser")
 
-amount = ask_amount(user_country, target_country)
-
-from_code = user_country['code']
-to_code = target_country['code']
-
-currency_request = requests.get(f"{currency_url}{from_code}-to-{to_code}-rate?amount={amount}")
-currency_soup = BeautifulSoup(currency_request.text, "html.parser")
-rate = currency_soup.find("span", {"class":"text-success"}).get_text()
-if rate:
-  result = float(rate) * amount
-  amount = format_currency(amount, from_code, locale="ko_KR")
-  result = format_currency(result, to_code, locale="ko_KR")
-  print(f"{amount} is {result}")
+      if alba_soup.find("tbody") == None:
+        export_csv([],company)
+        
+      else:
+        alba_list = alba_soup.find("tbody").find_all("tr",{"class":["","divide"]})
+        job_list = get_job(alba_list)
+        
+        export_csv(job_list,company)
+main()
